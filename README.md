@@ -1,4 +1,3 @@
--- Script para um painel GUI em formato de escudo com função de anti-lag
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Lighting = game:GetService("Lighting")
@@ -62,6 +61,19 @@ antiLagButton.AnchorPoint = Vector2.new(0.5, 0.5)
 antiLagButton.Parent = frame
 
 local antiLagEnabled = false
+local originalSettings = {
+    QualityLevel = settings().Rendering.QualityLevel,
+    GlobalShadows = Lighting.GlobalShadows,
+    FogEnd = Lighting.FogEnd,
+    Brightness = Lighting.Brightness,
+    PartSettings = {}
+}
+
+for _, v in pairs(workspace:GetDescendants()) do
+    if v:IsA("BasePart") then
+        table.insert(originalSettings.PartSettings, {part = v, CastShadow = v.CastShadow, Material = v.Material})
+    end
+end
 
 local function optimizeGame()
     -- Configurações para otimizar o jogo e aumentar o FPS
@@ -79,16 +91,14 @@ end
 
 local function resetGameSettings()
     -- Configurações para reverter as otimizações e restaurar o estado original
-    settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
-    Lighting.GlobalShadows = true
-    Lighting.FogEnd = 100000
-    for _, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.CastShadow = true
-            v.Material = Enum.Material.Plastic -- Voltar à qualidade original das texturas
-        end
+    settings().Rendering.QualityLevel = originalSettings.QualityLevel
+    Lighting.GlobalShadows = originalSettings.GlobalShadows
+    Lighting.FogEnd = originalSettings.FogEnd
+    Lighting.Brightness = originalSettings.Brightness
+    for _, v in pairs(originalSettings.PartSettings) do
+        v.part.CastShadow = v.CastShadow
+        v.part.Material = v.Material
     end
-    Lighting.Brightness = 2 -- Restaurar o brilho original
 end
 
 antiLagButton.MouseButton1Click:Connect(function()
@@ -124,7 +134,7 @@ local function makeDraggable(frame)
     end
 
     frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
@@ -138,7 +148,7 @@ local function makeDraggable(frame)
     end)
 
     frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
     end)
